@@ -1,13 +1,36 @@
 <html>
     <head>
-        <meta charset="UTF-8">
+        <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
         <title>CP Change Chart</title>
+
+        <!-- for Facebook -->
+		<meta property="og:title" content="CP Change Chart"/>
+		<meta property="og:type" content="website"/>
+		<meta property="og:url" content="https://waiting7777.github.io/cpchange/index.html"/>
+		<meta property="og:image" content="https://waiting7777.github.io/cpchange/image/fb.png"/>
+		<meta property="og:site_name" content="Waiing7777"/>
+		<meta property="og:description" content="Pokemon Stat Change Chart"/>
+
+        <meta property="fb:admins" content="671188086">
+		<meta property="fb:app_id" content="1010324812347164">
+
 
         <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
         <script src="https://cdn.jsdelivr.net/vue.resource/1.0.3/vue-resource.min.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
         <script src="https://d3js.org/d3.v3.min.js"></script>
+
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-88179118-1', 'auto');
+          ga('send', 'pageview');
 
         </script>
 
@@ -223,7 +246,7 @@
                 },
                 created : function(){
 
-                    this.$http.get('https://139.162.15.127:8080/api/pokemon/0').then((response) => {
+                    this.$http.get('https://139.162.15.127:80/api/pokemon/0').then((response) => {
                         console.log(response.data)
                         this.pokemon = response.data
 
