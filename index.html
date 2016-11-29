@@ -1,0 +1,646 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>CP Change Chart</title>
+
+        <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+        <script src="https://cdn.jsdelivr.net/vue.resource/1.0.3/vue-resource.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+        <script src="https://d3js.org/d3.v3.min.js"></script>
+
+        </script>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+        <style media="screen">
+
+            .bar .blue-bar{
+                fill: steelblue;
+            }
+
+            .bar2 .blue-bar{
+                fill: steelblue;
+            }
+
+            .bar .red-bar {
+                fill : #b83128;
+            }
+
+            .bar .green-bar {
+                fill : #5aba3b;
+            }
+            text{
+                pointer-events: none;
+            }
+            .bar text.value {
+                fill: white;
+            }
+            .bar text.value.black {
+                fill: black;
+            }
+            .axis {
+                shape-rendering: crispEdges;
+            }
+            /*.x.axis line {
+                stroke: #fff;
+                stroke-opacity: .8;
+            }*/
+            .y.axis path {
+                stroke: black;
+            }
+            .axis path {
+                fill: none;
+            }
+            body{
+                padding-top: 100px;
+            }
+            #tip{
+                box-shadow: 0 0 6px rgba(0,0,0,0.27);
+                position: fixed;
+                right: 10%;
+                top: 25%;
+                transition: opacity 0.7s ease;
+                padding: 20px;
+            }
+            #tip img{
+                margin: 20px 0;
+            }
+            #tip div{
+                margin-top: 5px;
+            }
+            .text{
+                font-size: 16px;
+                margin-top: 12px;
+            }
+            .little-title{
+                font-weight: bold;
+                margin-top: 32px;
+                font-size: 24px;
+            }
+            blockquote{
+                margin-top: 24px;
+            }
+            input, label{
+                font-size: 16px;
+            }
+            #text-contain{
+                margin-bottom: 32px;
+            }
+        </style>
+
+    </head>
+
+    <body>
+        <div class="container row" id="change">
+            <div class="col-md-1"></div>
+            <div class="col-md-10" id="text-contain">
+                <div class="little-title">Vue.js + d3.js</div>
+                <div class="text"></div>
+                <div class="text">2016/11/22 N社把所有神奇寶貝的基礎三維都做了調整</div>
+                <div class="text">以圖表呈現 調整後的每隻神奇寶貝的狀態</div>
+                <div class="text">以及每隻 buff/nerf的多寡</div>
+                <hr>
+                <div class="text">Buff最多 : 胡地 鐵甲暴龍, 鐵甲暴龍buff後 cp 排名第五,可以成為一線戰力.</div>
+                <div class="text">Nerf最多 : 大舌頭 胖可丁, 躺著也中槍.</div>
+                <hr>
+                <div class="text">因為 Vue.js 等現代框架皆採用 virtual DOM, d3.js 的 select 要接在 create 之後才找得到 dom.</div>
+                <div class="text">Vue.js 的 lifecycle 監測方式,讓 event and function handle 比 jquery 時代要快速很多.</div>
+                <blockquote cite="https://drive.google.com/file/d/0B5dWT-mTs7EcM3U0NDRKVnhJdm8/view">
+                    <a href="blockquote">資料來源</a>
+                </blockquote>
+            </div>
+            <div class="col-md-2"></div>
+            <div class="col-md-4">
+                <div>Sort : </div>
+                <input type="radio" id="by-id" value="id" v-model="sortby">
+                <label for="by-id">by id</label>
+                <br>
+                <input type="radio" id="by-cp" value="cp" v-model="sortby">
+                <label for="by-cp">by cp</label>
+                <br>
+                <input type="radio" id="by-amount" value="amount" v-model="sortby">
+                <label for="by-amount">by buff/nerf amount</label>
+            </div>
+            <div class="col-md-4">
+                <div>Data : </div>
+                <input type="radio" id="old" value="old" v-model="databy">
+                <label for="old">更新前</label>
+                <br>
+                <input type="radio" id="new" value="new" v-model="databy">
+                <label for="new">更新後</label>
+                <br>
+                <input type="radio" id="stack" value="stack" v-model="databy">
+                <label for="stack">疊加比對</label>
+            </div>
+            <div class="col-md-2"></div>
+            <div id="change-chart" class="col-md-12"></div>
+            <div id="tip" v-bind:style="{ opacity : tipOpacity }">
+                <img v-bind:src="tipImg">
+                <div id="name">
+                    <div>{{ tipObj.NameTw }}</div>
+                    <div>{{ tipObj.NameEn }}</div>
+                </div>
+                <div id="atk">
+                    <span>ATK : {{tipObj.Old_BaseAtk}} => </span><span v-bind:style="{ color : atkColor }">{{tipObj.BaseAtk}}</span><span v-bind:style="{ color : atkColor }"> ({{tipObj.BaseAtk - tipObj.Old_BaseAtk}})</span>
+                </div>
+                <div id="def">
+                    <span>DEF : {{tipObj.Old_BaseDef}} => </span><span v-bind:style="{ color : defColor }">{{tipObj.BaseDef}}</span><span v-bind:style="{ color : defColor }"> ({{tipObj.BaseDef - tipObj.Old_BaseDef}})</span>
+                </div>
+                <div id="sta">
+                    <span>STA : {{tipObj.Old_BaseSta}} => </span><span v-bind:style="{ color : staColor }">{{tipObj.BaseSta}}</span><span v-bind:style="{ color : staColor }"> ({{tipObj.BaseSta - tipObj.Old_BaseSta}})</span>
+                </div>
+                <div id="cp">
+                    <span>Max Cp : {{tipObj.Old_MaxCp}} => </span><span v-bind:style="{ color : cpColor }">{{tipObj.MaxCp}}</span><span v-bind:style="{ color : cpColor }"> ({{tipObj.MaxCp - tipObj.Old_MaxCp}})</span>
+                </div>
+            </div>
+
+        </div>
+
+        <script>
+            var m = [30, 100, 10, 100];
+            var w = 960 - m[1] - m[3];
+            var h = 4000 - m[0] - m[2];
+
+            var format = d3.format(",.0f");
+
+            var x = d3.scale.linear().range([0, w]);
+            var y = d3.scale.ordinal().rangeRoundBands([0, h], 0.1);
+
+            var xAxis = d3.svg.axis().scale(x).orient("top").tickSize(-h);
+            var yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
+
+            var svg, bar, bar2;
+
+            var data = [];
+            var transition_time = 1200;
+
+            function colorCheck(newStat, oldStat){
+                if(newStat > oldStat){
+                    return "#5aba3b";
+                }
+                else if(newStat == oldStat){
+                    return "#000000";
+                }
+                else{
+                    return "#b83128";
+                }
+            }
+
+            function handleMouseOver(d){
+
+                VM.tipImg = 'image/pokemon_big/' + d.id + '.png';
+                VM.tipOpacity = 1;
+                VM.tipObj = VM.pokemon[d.id-1];
+                VM.atkColor = colorCheck(VM.tipObj['BaseAtk'], VM.tipObj['Old_BaseAtk']);
+                VM.defColor = colorCheck(VM.tipObj['BaseDef'], VM.tipObj['Old_BaseDef']);
+                VM.staColor = colorCheck(VM.tipObj['BaseSta'], VM.tipObj['Old_BaseSta']);
+                VM.cpColor = colorCheck(VM.tipObj['MaxCp'], VM.tipObj['Old_MaxCp']);
+
+            }
+
+            function handleMouseOut(d){
+                VM.tipOpacity = 0;
+            }
+
+            var VM = new Vue({
+                el : '#change',
+                data : {
+                    pokemon : '',
+                    sortby : 'id',
+                    databy : 'new',
+                    showby : 'the-cp',
+                    tipImg : '/image/pokemon_big/1.png',
+                    tipObj : {},
+                    tipOpacity : 0,
+                    atkColor : '#000',
+                    defColor : '#000',
+                    staColor : '#000',
+                    cpColor : '#000',
+                    stackflag : false,
+                    disableflag : false
+                },
+                created : function(){
+
+                    this.$http.get('http://139.162.15.127:3000/api/pokemon/0').then((response) => {
+                        console.log(response.data)
+                        this.pokemon = response.data
+
+                        svg = d3.select('#change-chart').append('svg')
+                                    .attr('width', w + m[1] + m[3])
+                                    .attr('height', h + m[0] + m[2])
+                                    .append('g')
+                                    .attr('transform', 'translate(' + m[3] + ',' + m[0] + ')');
+
+                        for(var i = 0; i < this.pokemon.length; i++){
+                            data[i] = {};
+                            data[i]['value'] = this.pokemon[i]['MaxCp'];
+                            data[i]['name'] = this.pokemon[i]['NameEn'];
+                            data[i]['id'] = this.pokemon[i]['PokemonId'];
+                            data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                        }
+
+                        // data.forEach(function(d) { d.value = +d.value; });
+                        // data.sort(function(a, b) { return b.value - a.value; });
+
+                        x.domain([0, 4760]);
+                        y.domain(data.map(function(d){ return d.name; }));
+
+                        yAxis = d3.svg.axis().scale(y).orient("left").tickSize(0);
+
+                        bar = svg.selectAll('g.bar')
+                            .data(data)
+                            .enter().append('g')
+                            .attr('class', 'bar')
+                            .attr('transform', function(d) { return 'translate(0,' + y(d.name) + ')'; });
+
+                        bar.append('rect')
+                            .attr('width', function(d) { return x(d.value) })
+                            .attr('height', y.rangeBand())
+                            .attr('class', 'blue-bar')
+                            .on('mouseover', handleMouseOver)
+                            .on('mouseout', handleMouseOut);
+
+                        bar.append("text")
+                            .attr("class", "value")
+                            .attr("x", function(d) { return x(d.value); })
+                            .attr("y", y.rangeBand() / 2)
+                            .attr("dx", -3)
+                            .attr("dy", ".35em")
+                            .attr("text-anchor", "end")
+                            .text(function(d) { return format(d.value); });
+
+                        svg.append("g")
+                            .attr("class", "x axis")
+                            .call(xAxis);
+
+                        svg.append("g")
+                            .attr("class", "y axis")
+                            .call(yAxis);
+
+                        bar.append("image")
+                            .attr("x", function(d) { return x(d.value); })
+                            .attr("y", y.rangeBand() / 2 - 24)
+                            .attr("xlink:href", function(d) { return  "image/pokemon/" + d.id + ".png"})
+                            .attr('width', 50)
+                            .attr('height', 50);
+
+                    });
+
+                },
+                watch : {
+                    sortby : function(){
+                        console.log(this.sortby)
+                        this.sort();
+                    },
+                    databy : function(){
+                        console.log(this.databy)
+                        this.change();
+                    }
+                },
+                methods : {
+                    change : function(){
+
+                        if(this.databy == 'stack'){
+                            this.stackflag = true;
+                            for(var i = 0; i < this.pokemon.length; i++){
+                                data[i] = {};
+                                data[i]['value'] = this.pokemon[i]['MaxCp'];
+                                data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                data[i]['name'] = this.pokemon[i]['NameEn'];
+                                data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                            }
+                            console.log(data);
+                            if(this.sortby == 'id'){
+                                data.sort(function(a, b) { return a.id - b.id; });
+                            }
+                            else if(this.sortby == 'amount'){
+                                data.sort(function(a, b){ return (a.Old_MaxCp - a.MaxCp) - (b.Old_MaxCp - b.MaxCp)});
+                            }
+                            else{
+                                data.sort(function(a, b) { return b.value - a.value; });
+                            }
+
+                            x.domain([0, 4760]);
+                            y.domain(data.map(function(d){ return d.name; }));
+
+                            d3.selectAll('rect')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr('width', function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return x(d.Old_MaxCp);
+                                    }
+                                    return x(d.value);
+                                 })
+                                .attr('height', y.rangeBand())
+                                .attr('class', function(d){
+                                    if(d.Old_MaxCp > d.value){
+                                        return 'red-bar';
+                                    }
+                                    return 'green-bar';
+                                });
+
+                            bar2 = svg.selectAll('g.bar2')
+                                .data(data)
+                                .enter().append('g')
+                                .attr('class', 'bar2')
+                                .attr('transform', function(d) { return 'translate(0,' + y(d.name) + ')'; });
+
+                            bar2.append('rect')
+                                .attr('width', function(d) {
+                                    if(d.Old_MaxCp < d.value){
+                                        return x(d.Old_MaxCp)
+                                    }
+                                    return x(d.value);
+                                })
+                                .attr('height', y.rangeBand())
+                                .attr('class', 'blue-bar')
+                                .on('mouseover', handleMouseOver)
+                                .on('mouseout', handleMouseOut);
+
+                            d3.selectAll('.value')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return x(d.Old_MaxCp);
+                                    }
+                                    return x(d.value);
+                                })
+                                .attr("y", y.rangeBand() / 2)
+                                .attr("dx", -3)
+                                .attr("dy", ".35em")
+                                .style("display", "none")
+                                .text(function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return format(d.Old_MaxCp);
+                                    }
+                                    return format(d.value);
+                                });
+
+                            bar2.append("text")
+                                .attr("class", "value2")
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2)
+                                .attr("dx", -3)
+                                .attr("dy", ".35em")
+                                .attr("text-anchor", "end")
+                                .style('fill', 'white')
+                                .text(function(d) { return format(d.value); });
+
+                            d3.selectAll('image')
+                                .data(data)
+                                .attr("xlink:href", function(d) { return  "image/pokemon/" + d.id + ".png"})
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return x(d.Old_MaxCp);
+                                    }
+                                    return x(d.value);
+                                })
+                                .attr("y", y.rangeBand() / 2 - 24);
+                        }
+                        else{
+                            if(this.stackflag == true){
+                                bar2.remove();
+                                stackflag = false;
+                            }
+                            if(this.databy == 'new'){
+                                for(var i = 0; i < this.pokemon.length; i++){
+                                    data[i] = {};
+                                    data[i]['value'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['name'] = this.pokemon[i]['NameEn'];
+                                    data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                    data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                                }
+                            }
+                            else{
+                                for(var i = 0; i < this.pokemon.length; i++){
+                                    data[i] = {};
+                                    data[i]['value'] = this.pokemon[i]['Old_MaxCp'];
+                                    data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['name'] = this.pokemon[i]['NameEn'];
+                                    data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                    data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                                }
+                            }
+
+                            if(this.sortby == 'id'){
+                                data.sort(function(a, b) { return a.id - b.id; });
+                            }
+                            else if(this.sortby == 'amount'){
+                                data.sort(function(a, b){ return (a.Old_MaxCp - a.MaxCp) - (b.Old_MaxCp - b.MaxCp)});
+                            }
+                            else{
+                                data.sort(function(a, b) { return b.value - a.value; });
+                            }
+
+                            x.domain([0, 4760]);
+                            y.domain(data.map(function(d){ return d.name; }));
+
+                            d3.selectAll('rect')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr('width', function(d) { return x(d.value) })
+                                .attr('height', y.rangeBand())
+                                .attr('class', 'blue-bar');
+
+                            d3.selectAll('.value')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2)
+                                .attr("dx", -3)
+                                .attr("dy", ".35em")
+                                .style('fill', 'white')
+                                .style('display', 'block')
+                                .text(function(d) { return format(d.value); });
+
+                            d3.selectAll('image')
+                                .data(data)
+                                .attr("xlink:href", function(d) { return  "image/pokemon/" + d.id + ".png"})
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2 - 24);
+
+
+                            d3.selectAll('.y')
+                                .transition()
+                                .duration(transition_time)
+                                .call(yAxis);
+                        }
+
+                    },
+                    sort : function(){
+                        if(this.databy == 'stack'){
+                            this.stackflag = true;
+                            for(var i = 0; i < this.pokemon.length; i++){
+                                data[i] = {};
+                                data[i]['value'] = this.pokemon[i]['MaxCp'];
+                                data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                data[i]['name'] = this.pokemon[i]['NameEn'];
+                                data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                            }
+                            if(this.sortby == 'id'){
+                                data.sort(function(a, b) { return a.id - b.id; });
+                            }
+                            else if(this.sortby == 'amount'){
+                                data.sort(function(a, b){ return (a.Old_MaxCp - a.MaxCp) - (b.Old_MaxCp - b.MaxCp)});
+                            }
+                            else{
+                                data.sort(function(a, b) { return b.value - a.value; });
+                            }
+                            console.log(data);
+                            x.domain([0, 4760]);
+                            y.domain(data.map(function(d){ return d.name; }));
+
+                            d3.selectAll('.bar rect')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr('width', function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return x(d.Old_MaxCp);
+                                    }
+                                    return x(d.value);
+                                 })
+                                .attr('height', y.rangeBand())
+                                .attr('class', function(d){
+                                    if(d.Old_MaxCp > d.value){
+                                        return 'red-bar';
+                                    }
+                                    return 'green-bar';
+                                });
+
+                            svg.selectAll('.bar2 rect')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr('width', function(d) {
+                                    if(d.Old_MaxCp < d.value){
+                                        return x(d.Old_MaxCp)
+                                    }
+                                    return x(d.value);
+                                })
+                                .attr('height', y.rangeBand())
+                                .attr('class', 'blue-bar');
+
+                            d3.selectAll('.value2')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2)
+                                .attr("dx", -3)
+                                .attr("dy", ".35em")
+                                .text(function(d) { return format(d.value); });
+
+                            d3.selectAll('image')
+                                .data(data)
+                                .attr("xlink:href", function(d) { return  "image/pokemon/" + d.id + ".png"})
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) {
+                                    if(d.Old_MaxCp > d.value){
+                                        return x(d.Old_MaxCp)
+                                    }
+                                    return x(d.value);
+                                })
+                                .attr("y", y.rangeBand() / 2 - 24);
+
+                            d3.selectAll('.y')
+                                .transition()
+                                .duration(transition_time)
+                                .call(yAxis);
+
+                        }
+                        else{
+                            if(this.stackflag == true){
+                                bar2.remove();
+                            }
+                            if(this.databy == 'new'){
+                                for(var i = 0; i < this.pokemon.length; i++){
+                                    data[i] = {};
+                                    data[i]['value'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['name'] = this.pokemon[i]['NameEn'];
+                                    data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                    data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                                }
+                            }
+                            else{
+                                for(var i = 0; i < this.pokemon.length; i++){
+                                    data[i] = {};
+                                    data[i]['value'] = this.pokemon[i]['Old_MaxCp'];
+                                    data[i]['MaxCp'] = this.pokemon[i]['MaxCp'];
+                                    data[i]['name'] = this.pokemon[i]['NameEn'];
+                                    data[i]['id'] = this.pokemon[i]['PokemonId'];
+                                    data[i]['Old_MaxCp'] = this.pokemon[i]['Old_MaxCp'];
+                                }
+                            }
+
+                            if(this.sortby == 'id'){
+                                data.sort(function(a, b) { return a.id - b.id; });
+                            }
+                            else if(this.sortby == 'amount'){
+                                data.sort(function(a, b){ return (a.Old_MaxCp - a.MaxCp) - (b.Old_MaxCp - b.MaxCp)});
+                            }
+                            else{
+                                data.sort(function(a, b) { return b.value - a.value; });
+                            }
+
+                            x.domain([0, 4760]);
+                            y.domain(data.map(function(d){ return d.name; }));
+
+                            d3.selectAll('rect')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr('width', function(d) { return x(d.value) })
+                                .attr('height', y.rangeBand());
+
+                            d3.selectAll('.value')
+                                .data(data)
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2)
+                                .attr("dx", -3)
+                                .attr("dy", ".35em")
+                                .text(function(d) { return format(d.value); });
+
+                            d3.selectAll('image')
+                                .data(data)
+                                .attr("xlink:href", function(d) { return  "image/pokemon/" + d.id + ".png"})
+                                .transition()
+                                .duration(transition_time)
+                                .attr("x", function(d) { return x(d.value); })
+                                .attr("y", y.rangeBand() / 2 - 24);
+
+
+                            d3.selectAll('.y')
+                                .transition()
+                                .duration(transition_time)
+                                .call(yAxis);
+                        }
+
+                    }
+                }
+            });
+
+
+
+        </script>
+    </body>
+</html>
