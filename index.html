@@ -223,7 +223,7 @@
                 },
                 created : function(){
 
-                    this.$http.get('http://139.162.15.127:3000/api/pokemon/0').then((response) => {
+                    this.$http.get('https://139.162.15.127:8080/api/pokemon/0').then((response) => {
                         console.log(response.data)
                         this.pokemon = response.data
 
