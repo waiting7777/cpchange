@@ -1,7 +1,23 @@
 <html>
     <head>
-        <meta charset="UTF-8">
+        <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
         <title>CP Change Chart</title>
+
+        <!-- for Facebook -->
+		<!-- <meta property="og:title" content="黑天鵝來了 川普將讓世界大地震"/>
+		<meta property="og:type" content="website"/>
+		<meta property="og:url" content="http://p.udn.com.tw/upf/newmedia/2016_data/20161109_strategy_t/index.html"/>
+		<meta property="og:image" content="http://p.udn.com.tw/upf/newmedia/2016_data/20161109_strategy_t/image/fb_main.jpg"/>
+		<meta property="og:site_name" content="聯合報"/>
+		<meta property="article:author" content="https://www.facebook.com/udnplus">
+		<meta property="article:publisher" content="https://www.facebook.com/udnplus">
+		<meta property="og:description" content="美國大選川普領先。川普如果當選將是衝擊全球政經市場最大的黑天鵝。川普在選戰中高喊「美國優先」的態度，對國際局勢將帶來什麼樣的變化？他的決策影響亞洲局勢，更影響台海的穩定。"/> -->
+
+        <meta property="fb:admins" content="671188086">
+		<meta property="fb:app_id" content="1010324812347164">
+
 
         <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
         <script src="https://cdn.jsdelivr.net/vue.resource/1.0.3/vue-resource.min.js"></script>
@@ -223,7 +239,7 @@
                 },
                 created : function(){
 
-                    this.$http.get('https://139.162.15.127:8080/api/pokemon/0').then((response) => {
+                    this.$http.get('https://139.162.15.127:80/api/pokemon/0').then((response) => {
                         console.log(response.data)
                         this.pokemon = response.data
 
